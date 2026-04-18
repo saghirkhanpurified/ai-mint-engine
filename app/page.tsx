@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ConnectButton, useActiveAccount, useSendTransaction } from "thirdweb/react"; // Switched back to standard Send
+import { ConnectButton, useActiveAccount, useSendTransaction } from "thirdweb/react";
 import { createThirdwebClient, getContract, prepareTransaction, toWei } from "thirdweb";
 import { baseSepolia } from "thirdweb/chains";
 import { mintTo } from "thirdweb/extensions/erc721";
@@ -24,19 +24,22 @@ export default function Home() {
   const [imageUrl, setImageUrl] = useState(""); 
   const [error, setError] = useState("");
   const [mintedTxHash, setMintedTxHash] = useState("");
-  const [status, setStatus] = useState(""); // To tell the user what's happening
+  const [status, setStatus] = useState("");
 
   const handleGenerate = async () => {
-    if (!prompt) return alert("Please describe your asset first!");
+    if (!prompt) return alert("What should I create for you?");
     setIsGenerating(true);
     setError(""); setImageUrl(""); setMintedTxHash(""); setStatus("");
+
+    // --- PROMPT GUARD: The Secret Sauce ---
+    const masterpiecePrompt = `${prompt}, masterpiece, highly detailed, 8k resolution, cinematic lighting, sharp focus, professional digital art style, vibrant colors`;
 
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: masterpiecePrompt }), // Sending the enhanced prompt
       });
-      if (!response.ok) throw new Error("Generation failed.");
+      if (!response.ok) throw new Error("The Forge is busy. Try again!");
       const data = await response.json();
       setImageUrl(data.imageUrl); 
     } catch (err: any) {
@@ -47,9 +50,9 @@ export default function Home() {
   };
 
   const handleMint = async () => {
-    if (!account) return alert("Please connect your wallet first!");
+    if (!account) return alert("Connect your wallet to claim this art!");
     setError("");
-    setStatus("Processing Payment...");
+    setStatus("Processing $1.00 Payment...");
     
     const contract = getContract({
       client,
@@ -57,7 +60,6 @@ export default function Home() {
       address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string,
     });
 
-    // 1. Prepare the $1.00 Payment
     const paymentTx = prepareTransaction({
       to: MY_WALLET_ADDRESS,
       chain: baseSepolia,
@@ -65,37 +67,34 @@ export default function Home() {
       value: toWei(MINT_FEE_USD),
     });
 
-    // 2. Send Payment First
     sendTransaction(paymentTx, {
       onSuccess: () => {
-        setStatus("Payment Received! Now minting your NFT...");
+        setStatus("Payment Verified! Minting NFT...");
         
-        // 3. Prepare the NFT Mint
         const mintTx = mintTo({
           contract,
           to: account.address,
           nft: {
-            name: "AI Mint Engine NFT",
-            description: prompt,
+            name: "AI Engine Masterpiece",
+            description: `A unique creation based on: ${prompt}`,
             image: imageUrl, 
           },
         });
 
-        // 4. Send the Mint Transaction
         sendTransaction(mintTx, {
           onSuccess: (result) => {
             setMintedTxHash(result.transactionHash);
             setStatus("");
-            alert(`Success! You earned $1.00 and the user got their NFT!`);
+            alert(`Victory! You've earned $1.00 and created a Masterpiece.`);
           },
           onError: (err) => {
-            setError("Payment went through, but minting failed. Please contact support.");
+            setError("Payment received, but minting failed. Check your dashboard.");
             console.error(err);
           }
         });
       },
       onError: (err) => {
-        setError("Payment failed or was cancelled.");
+        setError("Payment cancelled. The forge remains cold.");
         setStatus("");
         console.error(err);
       }
@@ -103,65 +102,88 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col items-center py-20 px-4">
+    <main className="min-h-screen bg-black text-white flex flex-col items-center py-20 px-4 font-sans">
+      {/* Navigation */}
       <div className="absolute top-6 right-6">
         <ConnectButton client={client} />
       </div>
 
+      {/* Header */}
       <div className="text-center max-w-2xl mb-12">
-        <h1 className="text-6xl font-black mb-4 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
-          AI MINT ENGINE
+        <h1 className="text-7xl font-black mb-4 tracking-tighter bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent">
+          MINT ENGINE <span className="text-purple-500">PRO</span>
         </h1>
-        <p className="text-gray-500 font-bold">The future of digital ownership starts here.</p>
+        <p className="text-gray-400 text-lg uppercase tracking-widest font-light">
+          High-Fidelity AI • Base Layer 2 • Instant Ownership
+        </p>
       </div>
 
-      <div className="bg-gray-900 p-8 rounded-3xl shadow-2xl w-full max-w-xl border border-gray-800">
-        {imageUrl && (
-          <div className="mb-8 rounded-2xl overflow-hidden border border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.2)]">
-            <img src={imageUrl} alt="Generated" className="w-full h-auto" />
-            <div className="p-4 bg-gray-950">
-              {!mintedTxHash ? (
-                <button 
-                  onClick={handleMint}
-                  disabled={isMinting}
-                  className="w-full bg-green-500 hover:bg-green-600 text-black font-black py-4 rounded-xl transition-all"
-                >
-                  {isMinting ? status || "CHECKING METAMASK..." : "🚀 MINT & PAY $1.00"}
-                </button>
-              ) : (
-                <div className="text-center">
-                  <p className="text-green-400 font-bold mb-2">✅ TRANSACTION SUCCESSFUL!</p>
-                  <a 
-                    href={`https://sepolia.basescan.org/tx/${mintedTxHash}`}
-                    target="_blank" 
-                    className="text-xs text-blue-400 underline"
+      {/* Main App Container */}
+      <div className="bg-[#0a0a0a] p-10 rounded-[40px] shadow-[0_0_50px_rgba(0,0,0,1)] w-full max-w-xl border border-gray-800/50">
+        
+        {/* Image Display Area */}
+        <div className="relative mb-10 group">
+          {imageUrl ? (
+            <div className="rounded-3xl overflow-hidden border-2 border-purple-500/30 shadow-2xl transition-transform duration-500 hover:scale-[1.02]">
+              <img src={imageUrl} alt="Generated Art" className="w-full h-auto" />
+              <div className="p-6 bg-gray-950/80 backdrop-blur-md">
+                {!mintedTxHash ? (
+                  <button 
+                    onClick={handleMint}
+                    disabled={isMinting}
+                    className="w-full bg-white hover:bg-purple-100 text-black font-black py-5 rounded-2xl transition-all active:scale-95 text-lg"
                   >
-                    View on Basescan
-                  </a>
-                </div>
-              )}
+                    {isMinting ? status : "CLAIM AS NFT ($1.00)"}
+                  </button>
+                ) : (
+                  <div className="text-center py-2">
+                    <p className="text-green-400 font-black text-xl mb-3">✨ COLLECTION UPDATED</p>
+                    <a 
+                      href={`https://sepolia.basescan.org/tx/${mintedTxHash}`}
+                      target="_blank" 
+                      className="text-sm text-gray-400 hover:text-white underline transition-colors"
+                    >
+                      Verify on Basescan
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="aspect-square bg-gray-900/50 rounded-3xl border-2 border-dashed border-gray-800 flex items-center justify-center text-gray-700 italic">
+              {isGenerating ? "The AI is painting..." : "Your masterpiece will appear here"}
+            </div>
+          )}
+        </div>
 
-        {error && <p className="text-red-500 mt-4 text-center text-sm font-bold">{error}</p>}
+        {error && <p className="text-red-400 mb-6 text-center text-sm font-bold bg-red-950/20 py-3 rounded-xl border border-red-900/50">{error}</p>}
 
-        <input 
-          type="text" 
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe what you want to create..." 
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 my-6 focus:border-purple-500 outline-none"
-        />
+        {/* Input Area */}
+        <div className="space-y-4">
+          <input 
+            type="text" 
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Describe your vision..." 
+            className="w-full bg-gray-950 border border-gray-800 rounded-2xl p-5 focus:border-purple-500 outline-none transition-all text-lg placeholder:text-gray-700"
+          />
 
-        <button 
-          onClick={handleGenerate}
-          disabled={isGenerating || isMinting}
-          className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-4 rounded-xl transition-all"
-        >
-          {isGenerating ? "FORGING ART..." : "GENERATE ARTWORK"}
-        </button>
+          <button 
+            onClick={handleGenerate}
+            disabled={isGenerating || isMinting}
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 font-black py-5 rounded-2xl transition-all active:scale-95 shadow-lg shadow-purple-500/20 disabled:opacity-50"
+          >
+            {isGenerating ? "FORGING..." : "GENERATE ARTWORK"}
+          </button>
+        </div>
       </div>
+
+      {/* Footer Info */}
+      <footer className="mt-12 text-gray-600 text-xs flex gap-6">
+        <p>POWERED BY BASE</p>
+        <p>10% SECONDARY ROYALTIES</p>
+        <p>© 2026 MINT ENGINE</p>
+      </footer>
     </main>
   );
 }

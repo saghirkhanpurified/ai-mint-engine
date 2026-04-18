@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ConnectButton, useActiveAccount, useSendTransaction } from "thirdweb/react";
 import { createThirdwebClient, getContract } from "thirdweb";
-import { sepolia } from "thirdweb/chains";
+import { baseSepolia } from "thirdweb/chains"; // Changed from sepolia to baseSepolia
 import { mintTo } from "thirdweb/extensions/erc721";
 
 const client = createThirdwebClient({
@@ -45,10 +45,10 @@ export default function Home() {
   const handleMint = async () => {
     if (!account) return alert("Please connect your wallet first!");
     
-    // 1. Connect to your new Smart Contract
+    // 1. Connect to your new Smart Contract on Base Sepolia
     const contract = getContract({
       client,
-      chain: sepolia,
+      chain: baseSepolia, // Changed from sepolia to baseSepolia
       address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string,
     });
 
@@ -67,7 +67,7 @@ export default function Home() {
     sendTransaction(transaction, {
       onSuccess: (result) => {
         setMintedTxHash(result.transactionHash);
-        alert("Success! Your NFT is being forged on the blockchain.");
+        alert("Success! Your NFT is being forged on the Base blockchain.");
       },
       onError: (err) => {
         setError(err.message);
@@ -85,7 +85,7 @@ export default function Home() {
         <h1 className="text-6xl font-black mb-4 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
           AI MINT ENGINE
         </h1>
-        <p className="text-gray-500">Generate art. Pin to IPFS. Mint to Blockchain.</p>
+        <p className="text-gray-500">Generate art. Pin to IPFS. Mint to Base Blockchain.</p>
       </div>
 
       <div className="bg-gray-900 p-8 rounded-3xl shadow-2xl w-full max-w-xl border border-gray-800">
@@ -105,17 +105,19 @@ export default function Home() {
                 <div className="text-center">
                   <p className="text-green-400 font-bold mb-2">✅ NFT MINTED!</p>
                   <a 
-                    href={`https://sepolia.etherscan.io/tx/${mintedTxHash}`} 
+                    href={`https://sepolia.basescan.org/tx/${mintedTxHash}`} // Updated to Basescan
                     target="_blank" 
                     className="text-xs text-blue-400 underline"
                   >
-                    View Transaction on Etherscan
+                    View Transaction on Basescan
                   </a>
                 </div>
               )}
             </div>
           </div>
         )}
+
+        {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
 
         <input 
           type="text" 

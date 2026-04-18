@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ConnectButton, useActiveAccount, useSendBatchTransaction } from "thirdweb/react";
+import { ConnectButton, useActiveAccount, useSendTransaction } from "thirdweb/react"; // Switched back to standard Send
 import { createThirdwebClient, getContract, prepareTransaction, toWei } from "thirdweb";
 import { baseSepolia } from "thirdweb/chains";
 import { mintTo } from "thirdweb/extensions/erc721";
@@ -17,18 +17,19 @@ const client = createThirdwebClient({
 
 export default function Home() {
   const account = useActiveAccount(); 
-  const { mutate: sendBatch, isPending: isMinting } = useSendBatchTransaction();
+  const { mutate: sendTransaction, isPending: isMinting } = useSendTransaction();
 
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [imageUrl, setImageUrl] = useState(""); 
   const [error, setError] = useState("");
   const [mintedTxHash, setMintedTxHash] = useState("");
+  const [status, setStatus] = useState(""); // To tell the user what's happening
 
   const handleGenerate = async () => {
     if (!prompt) return alert("Please describe your asset first!");
     setIsGenerating(true);
-    setError(""); setImageUrl(""); setMintedTxHash("");
+    setError(""); setImageUrl(""); setMintedTxHash(""); setStatus("");
 
     try {
       const response = await fetch("/api/generate", {
@@ -47,6 +48,8 @@ export default function Home() {
 
   const handleMint = async () => {
     if (!account) return alert("Please connect your wallet first!");
+    setError("");
+    setStatus("Processing Payment...");
     
     const contract = getContract({
       client,
@@ -54,7 +57,7 @@ export default function Home() {
       address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string,
     });
 
-    // 1. Prepare the $1.00 Payment to YOU
+    // 1. Prepare the $1.00 Payment
     const paymentTx = prepareTransaction({
       to: MY_WALLET_ADDRESS,
       chain: baseSepolia,
@@ -62,25 +65,39 @@ export default function Home() {
       value: toWei(MINT_FEE_USD),
     });
 
-    // 2. Prepare the NFT Mint
-    const mintTx = mintTo({
-      contract,
-      to: account.address,
-      nft: {
-        name: "AI Mint Engine NFT",
-        description: prompt,
-        image: imageUrl, 
-      },
-    });
+    // 2. Send Payment First
+    sendTransaction(paymentTx, {
+      onSuccess: () => {
+        setStatus("Payment Received! Now minting your NFT...");
+        
+        // 3. Prepare the NFT Mint
+        const mintTx = mintTo({
+          contract,
+          to: account.address,
+          nft: {
+            name: "AI Mint Engine NFT",
+            description: prompt,
+            image: imageUrl, 
+          },
+        });
 
-    // 3. Send BOTH at once (The Earning Step)
-    sendBatch([paymentTx, mintTx], {
-      onSuccess: (result) => {
-        setMintedTxHash(result.transactionHash);
-        alert(`Success! You earned $1.00 and the user got their NFT on Base!`);
+        // 4. Send the Mint Transaction
+        sendTransaction(mintTx, {
+          onSuccess: (result) => {
+            setMintedTxHash(result.transactionHash);
+            setStatus("");
+            alert(`Success! You earned $1.00 and the user got their NFT!`);
+          },
+          onError: (err) => {
+            setError("Payment went through, but minting failed. Please contact support.");
+            console.error(err);
+          }
+        });
       },
       onError: (err) => {
-        setError(err.message);
+        setError("Payment failed or was cancelled.");
+        setStatus("");
+        console.error(err);
       }
     });
   };
@@ -109,7 +126,7 @@ export default function Home() {
                   disabled={isMinting}
                   className="w-full bg-green-500 hover:bg-green-600 text-black font-black py-4 rounded-xl transition-all"
                 >
-                  {isMinting ? "CONFIRMING PAYMENT..." : "🚀 MINT & PAY $1.00"}
+                  {isMinting ? status || "CHECKING METAMASK..." : "🚀 MINT & PAY $1.00"}
                 </button>
               ) : (
                 <div className="text-center">
@@ -127,14 +144,14 @@ export default function Home() {
           </div>
         )}
 
-        {error && <p className="text-red-500 mb-4 text-center text-sm">{error}</p>}
+        {error && <p className="text-red-500 mt-4 text-center text-sm font-bold">{error}</p>}
 
         <input 
           type="text" 
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Describe what you want to create..." 
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 mb-6 focus:border-purple-500 outline-none"
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 my-6 focus:border-purple-500 outline-none"
         />
 
         <button 

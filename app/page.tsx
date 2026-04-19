@@ -27,6 +27,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [mintedTxHash, setMintedTxHash] = useState("");
   const [status, setStatus] = useState("");
+  const [showSuccessToast, setShowSuccessToast] = useState(false); // NEW STATE FOR BEAUTIFUL ALERT
 
   const loadingMessages = [
     "Analyzing vision...",
@@ -48,10 +49,10 @@ export default function Home() {
   }, [isGenerating]);
 
   const handleGenerate = async () => {
-    if (!prompt) return alert("What should I create for you?");
+    if (!prompt) return setError("What should I create for you?");
     setIsGenerating(true);
     setIsImageLoaded(false);
-    setError(""); setImageUrl(""); setMintedTxHash(""); setStatus("");
+    setError(""); setImageUrl(""); setMintedTxHash(""); setStatus(""); setShowSuccessToast(false);
 
     // --- PROMPT GUARD ---
     const masterpiecePrompt = `${prompt}, clean high-end digital art, masterpiece, striking contrast, hyper-detailed, clear focal point, 8k resolution, award-winning composition`;
@@ -72,7 +73,7 @@ export default function Home() {
   };
 
   const handleMint = async () => {
-    if (!account) return alert("Connect your wallet to claim this art!");
+    if (!account) return setError("Connect your wallet to claim this art!");
     setError("");
     setStatus("Processing $1.00 Payment...");
     
@@ -107,7 +108,8 @@ export default function Home() {
           onSuccess: (result) => {
             setMintedTxHash(result.transactionHash);
             setStatus("");
-            alert(`Victory! You've earned $1.00 and created a Masterpiece.`);
+            setShowSuccessToast(true); // TRIGGER BEAUTIFUL ALERT
+            setTimeout(() => setShowSuccessToast(false), 5000); // HIDE AFTER 5 SECONDS
           },
           onError: (err) => {
             setError("Payment received, but minting failed. Check your dashboard.");
@@ -124,10 +126,26 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white font-sans selection:bg-purple-500/30 overflow-x-hidden flex flex-col">
+    <main className="min-h-screen bg-black text-white font-sans selection:bg-purple-500/30 overflow-x-hidden flex flex-col relative">
       
+      {/* BEAUTIFUL CUSTOM TOAST NOTIFICATION */}
+      {showSuccessToast && (
+        <div className="fixed bottom-10 right-10 bg-[#0a0a0c] border border-purple-500/50 shadow-[0_0_40px_rgba(168,85,247,0.3)] rounded-2xl p-5 flex items-center gap-4 z-50 transition-all duration-500 translate-y-0 opacity-100">
+          <div className="bg-purple-500/20 p-3 rounded-full text-purple-400">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <div>
+            <h4 className="text-white font-black tracking-wide">Masterpiece Minted!</h4>
+            <p className="text-gray-400 text-sm mt-1">Asset successfully secured to your wallet.</p>
+          </div>
+          <button onClick={() => setShowSuccessToast(false)} className="text-gray-600 hover:text-white ml-6 transition-colors">
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Top Navigation Bar */}
-      <nav className="w-full flex justify-between items-center p-6 border-b border-gray-900/50 bg-black/50 backdrop-blur-md fixed top-0 z-50">
+      <nav className="w-full flex justify-between items-center p-6 border-b border-gray-900/50 bg-black/50 backdrop-blur-md fixed top-0 z-40">
         <div className="font-black text-xl tracking-widest text-white flex items-center gap-2">
           <div className="w-6 h-6 bg-gradient-to-tr from-purple-600 to-blue-500 rounded-md"></div>
           MINT ENGINE <span className="text-purple-500">PRO</span>
@@ -148,7 +166,6 @@ export default function Home() {
           </p>
 
           <div className="space-y-6 pt-4 border-t border-gray-900">
-            {/* Feature 1 */}
             <div className="flex items-start gap-4">
               <div className="bg-purple-900/30 p-3 rounded-xl border border-purple-500/20 text-purple-400">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
@@ -159,7 +176,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Feature 2 */}
             <div className="flex items-start gap-4">
               <div className="bg-blue-900/30 p-3 rounded-xl border border-blue-500/20 text-blue-400">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
@@ -180,7 +196,6 @@ export default function Home() {
           {/* Image Display Area (Shorter height) */}
           <div className="relative mb-6 group min-h-[260px] flex flex-col justify-center">
             
-            {/* 1. Loading State */}
             {isGenerating && (
               <div className="absolute inset-0 w-full h-full bg-[#121217] rounded-2xl border border-gray-800 flex flex-col items-center justify-center space-y-4 shadow-inner">
                 <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
@@ -190,7 +205,6 @@ export default function Home() {
               </div>
             )}
 
-            {/* 2. Image Render & Mint Button State */}
             {imageUrl && !isGenerating && (
               <div className="rounded-2xl overflow-hidden border border-gray-700 shadow-2xl bg-[#0a0a0a] relative flex flex-col h-full">
                 <img 
@@ -227,7 +241,6 @@ export default function Home() {
               </div>
             )}
 
-            {/* 3. Empty State (SLEEK SVG ICON) */}
             {!imageUrl && !isGenerating && (
               <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#121217] to-[#0a0a0c] rounded-2xl border-2 border-dashed border-gray-800 flex flex-col items-center justify-center text-center p-6 shadow-inner">
                 <svg className="w-12 h-12 text-gray-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -239,7 +252,6 @@ export default function Home() {
 
           {error && <p className="text-red-400 mb-4 text-center text-xs font-bold bg-red-950/30 py-2 rounded-lg border border-red-900/50">{error}</p>}
 
-          {/* Input Area (Compacted) */}
           <div className="space-y-3 relative z-10">
             <input 
               type="text" 

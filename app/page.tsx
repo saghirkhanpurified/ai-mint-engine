@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConnectButton, useActiveAccount, useSendTransaction } from "thirdweb/react";
 import { createThirdwebClient, getContract, prepareTransaction, toWei } from "thirdweb";
 import { baseSepolia } from "thirdweb/chains";
@@ -21,23 +21,47 @@ export default function Home() {
 
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [imageUrl, setImageUrl] = useState(""); 
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [error, setError] = useState("");
   const [mintedTxHash, setMintedTxHash] = useState("");
   const [status, setStatus] = useState("");
 
+  // Dynamic loading text to keep the user engaged while waiting
+  const loadingMessages = [
+    "Analyzing vision...",
+    "Rendering high-res pixels...",
+    "Applying cinematic lighting...",
+    "Finalizing masterpiece..."
+  ];
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isGenerating) {
+      interval = setInterval(() => {
+        setLoadingStep((prev) => (prev + 1) % loadingMessages.length);
+      }, 2500); // Changes text every 2.5 seconds
+    } else {
+      setLoadingStep(0);
+    }
+    return () => clearInterval(interval);
+  }, [isGenerating]);
+
   const handleGenerate = async () => {
     if (!prompt) return alert("What should I create for you?");
     setIsGenerating(true);
+    setIsImageLoaded(false);
     setError(""); setImageUrl(""); setMintedTxHash(""); setStatus("");
 
-    // --- PROMPT GUARD: The Fine Art Gallery ---
-    const masterpiecePrompt = `${prompt}, abstract geometric algorithm art, minimalist vector style, mathematical perfection, high-end modern art museum piece, masterpiece, 8k resolution, trending on ArtBlocks`;
+    // --- PROMPT GUARD: The Clean Luxury Guard ---
+    // This creates sharp, clear, high-contrast art without making it chaotic.
+    const masterpiecePrompt = `${prompt}, clean high-end digital art, masterpiece, striking contrast, hyper-detailed, clear focal point, 8k resolution, award-winning composition`;
 
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
-        body: JSON.stringify({ prompt: masterpiecePrompt }), // Sending the enhanced prompt
+        body: JSON.stringify({ prompt: masterpiecePrompt }), 
       });
       if (!response.ok) throw new Error("The Forge is busy. Try again!");
       const data = await response.json();
@@ -102,16 +126,16 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col items-center py-20 px-4 font-sans">
+    <main className="min-h-screen bg-black text-white flex flex-col items-center py-20 px-4 font-sans selection:bg-purple-500/30">
       {/* Navigation */}
       <div className="absolute top-6 right-6">
         <ConnectButton client={client} />
       </div>
 
       {/* Header */}
-      <div className="text-center max-w-2xl mb-12">
+      <div className="text-center max-w-2xl mb-12 animate-fade-in-down">
         <h1 className="text-7xl font-black mb-4 tracking-tighter bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent">
-          MINT ENGINE <span className="text-purple-500">PRO</span>
+          MINT ENGINE <span className="text-purple-500 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]">PRO</span>
         </h1>
         <p className="text-gray-400 text-lg uppercase tracking-widest font-light">
           High-Fidelity AI • Base Layer 2 • Instant Ownership
@@ -119,39 +143,68 @@ export default function Home() {
       </div>
 
       {/* Main App Container */}
-      <div className="bg-[#0a0a0a] p-10 rounded-[40px] shadow-[0_0_50px_rgba(0,0,0,1)] w-full max-w-xl border border-gray-800/50">
+      <div className="bg-[#0a0a0a] p-10 rounded-[40px] shadow-[0_0_80px_rgba(168,85,247,0.07)] w-full max-w-xl border border-gray-800/60 relative overflow-hidden">
         
+        {/* Subtle Background Glow inside the card */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-purple-600/10 blur-[60px] pointer-events-none"></div>
+
         {/* Image Display Area */}
-        <div className="relative mb-10 group">
-          {imageUrl ? (
-            <div className="rounded-3xl overflow-hidden border-2 border-purple-500/30 shadow-2xl transition-transform duration-500 hover:scale-[1.02]">
-              <img src={imageUrl} alt="Generated Art" className="w-full h-auto" />
-              <div className="p-6 bg-gray-950/80 backdrop-blur-md">
-                {!mintedTxHash ? (
-                  <button 
-                    onClick={handleMint}
-                    disabled={isMinting}
-                    className="w-full bg-white hover:bg-purple-100 text-black font-black py-5 rounded-2xl transition-all active:scale-95 text-lg"
-                  >
-                    {isMinting ? status : "CLAIM AS NFT ($1.00)"}
-                  </button>
-                ) : (
-                  <div className="text-center py-2">
-                    <p className="text-green-400 font-black text-xl mb-3">✨ COLLECTION UPDATED</p>
-                    <a 
-                      href={`https://sepolia.basescan.org/tx/${mintedTxHash}`}
-                      target="_blank" 
-                      className="text-sm text-gray-400 hover:text-white underline transition-colors"
-                    >
-                      Verify on Basescan
-                    </a>
-                  </div>
-                )}
-              </div>
+        <div className="relative mb-10 group min-h-[300px] flex flex-col justify-center">
+          
+          {/* 1. Loading State */}
+          {isGenerating && (
+            <div className="aspect-square w-full bg-gray-900/40 rounded-3xl border border-gray-800 flex flex-col items-center justify-center space-y-6 animate-pulse">
+              <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+              <p className="text-purple-400 font-medium tracking-wide animate-pulse">
+                {loadingMessages[loadingStep]}
+              </p>
             </div>
-          ) : (
-            <div className="aspect-square bg-gray-900/50 rounded-3xl border-2 border-dashed border-gray-800 flex items-center justify-center text-gray-700 italic">
-              {isGenerating ? "The AI is painting..." : "Your masterpiece will appear here"}
+          )}
+
+          {/* 2. Image Render & Mint Button State */}
+          {imageUrl && !isGenerating && (
+            <div className="rounded-3xl overflow-hidden border border-gray-700/50 shadow-2xl transition-all duration-700 hover:border-purple-500/50 bg-gray-950">
+              
+              {/* Image with onLoad handler */}
+              <img 
+                src={imageUrl} 
+                alt="Generated Art" 
+                className={`w-full h-auto object-cover transition-opacity duration-1000 ${isImageLoaded ? "opacity-100" : "opacity-0"}`}
+                onLoad={() => setIsImageLoaded(true)}
+              />
+
+              {/* The Mint Button UI ONLY reveals when the image is fully loaded */}
+              {isImageLoaded && (
+                <div className="p-6 bg-gray-950 border-t border-gray-800/80 animate-fade-in-up">
+                  {!mintedTxHash ? (
+                    <button 
+                      onClick={handleMint}
+                      disabled={isMinting}
+                      className="w-full bg-white hover:bg-gray-200 text-black font-black py-5 rounded-2xl transition-all active:scale-[0.98] text-lg flex items-center justify-center gap-2"
+                    >
+                      {isMinting ? status : "CLAIM AS NFT ($1.00)"}
+                    </button>
+                  ) : (
+                    <div className="text-center py-3 bg-green-950/20 rounded-2xl border border-green-900/30">
+                      <p className="text-green-400 font-black text-lg mb-2">✨ ASSET SECURED</p>
+                      <a 
+                        href={`https://sepolia.basescan.org/tx/${mintedTxHash}`}
+                        target="_blank" 
+                        className="text-sm text-gray-400 hover:text-white underline transition-colors"
+                      >
+                        Verify on Blockchain
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 3. Empty State (Before anything is generated) */}
+          {!imageUrl && !isGenerating && (
+            <div className="aspect-square w-full bg-gray-900/20 rounded-3xl border-2 border-dashed border-gray-800 flex items-center justify-center text-gray-600 font-light">
+              Your masterpiece will appear here
             </div>
           )}
         </div>
@@ -159,30 +212,30 @@ export default function Home() {
         {error && <p className="text-red-400 mb-6 text-center text-sm font-bold bg-red-950/20 py-3 rounded-xl border border-red-900/50">{error}</p>}
 
         {/* Input Area */}
-        <div className="space-y-4">
+        <div className="space-y-4 relative z-10">
           <input 
             type="text" 
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe your vision..." 
-            className="w-full bg-gray-950 border border-gray-800 rounded-2xl p-5 focus:border-purple-500 outline-none transition-all text-lg placeholder:text-gray-700"
+            placeholder="Describe your vision (e.g. A neon warrior, A crystal dragon)..." 
+            className="w-full bg-gray-950/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-5 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all text-lg placeholder:text-gray-700"
           />
 
           <button 
             onClick={handleGenerate}
             disabled={isGenerating || isMinting}
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 font-black py-5 rounded-2xl transition-all active:scale-95 shadow-lg shadow-purple-500/20 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black py-5 rounded-2xl transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(168,85,247,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isGenerating ? "FORGING..." : "GENERATE ARTWORK"}
+            {isGenerating ? "INITIALIZING ENGINE..." : "GENERATE ARTWORK"}
           </button>
         </div>
       </div>
 
       {/* Footer Info */}
-      <footer className="mt-12 text-gray-600 text-xs flex gap-6">
+      <footer className="mt-12 text-gray-600 text-xs flex gap-6 tracking-widest font-semibold">
         <p>POWERED BY BASE</p>
-        <p>10% SECONDARY ROYALTIES</p>
-        <p>© 2026 MINT ENGINE</p>
+        <p>10% ROYALTIES</p>
+        <p>V 1.2.0</p>
       </footer>
     </main>
   );

@@ -193,12 +193,12 @@ export default function Home() {
           
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-24 bg-purple-600/10 blur-[50px] pointer-events-none"></div>
 
-          {/* Image Display Area - COMPLETELY ISOLATED LAYERS */}
+          {/* Image Display Area - FIXED FOR ALL BROWSERS */}
           <div className="relative mb-6 w-full aspect-square rounded-2xl border border-gray-800 bg-[#0d0d12] overflow-hidden shadow-inner">
             
-            {/* 1. Loading State (Positioned Absolute) */}
+            {/* 1. Loading State */}
             {isGenerating && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4 bg-[#0d0d12] z-20">
+              <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
                 <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
                 <p className="text-purple-400 font-medium tracking-wide text-sm animate-pulse">
                   {loadingMessages[loadingStep]}
@@ -206,27 +206,27 @@ export default function Home() {
               </div>
             )}
 
-            {/* 2. Empty State (Positioned Absolute) */}
+            {/* 2. Empty State */}
             {!imageUrl && !isGenerating && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-[#0d0d12] z-10">
+              <div className="w-full h-full flex flex-col items-center justify-center text-center p-6">
                 <svg className="w-12 h-12 text-gray-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <p className="text-gray-400 font-medium text-base">Awaiting your vision</p>
                 <p className="text-gray-600 text-xs mt-2">Enter a prompt to ignite the engine.</p>
               </div>
             )}
 
-            {/* 3. Image Render & Overlay Mint Button (Positioned Absolute) */}
-            {imageUrl && (
-              <div className="absolute inset-0 w-full h-full z-30">
+            {/* 3. Image Render & Overlay Mint Button */}
+            {imageUrl && !isGenerating && (
+              <div className="w-full h-full relative">
                 <img 
                   src={imageUrl} 
                   alt="Generated Art" 
-                  className={`w-full h-full object-cover transition-opacity duration-1000 ${isImageLoaded && !isGenerating ? "opacity-100" : "opacity-0"}`}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${isImageLoaded ? "opacity-100" : "opacity-0"}`}
                   onLoad={() => setIsImageLoaded(true)}
                 />
 
-                {isImageLoaded && !isGenerating && (
-                  <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black via-black/80 to-transparent pt-16">
+                {isImageLoaded && (
+                  <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black via-black/80 to-transparent pt-16 z-10">
                     {!mintedTxHash ? (
                       <button 
                         onClick={handleMint}

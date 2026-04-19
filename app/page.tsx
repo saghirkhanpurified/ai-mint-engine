@@ -27,7 +27,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [mintedTxHash, setMintedTxHash] = useState("");
   const [status, setStatus] = useState("");
-  const [showSuccessToast, setShowSuccessToast] = useState(false); // NEW STATE FOR BEAUTIFUL ALERT
+  const [showSuccessToast, setShowSuccessToast] = useState(false); 
 
   const loadingMessages = [
     "Analyzing vision...",
@@ -108,8 +108,8 @@ export default function Home() {
           onSuccess: (result) => {
             setMintedTxHash(result.transactionHash);
             setStatus("");
-            setShowSuccessToast(true); // TRIGGER BEAUTIFUL ALERT
-            setTimeout(() => setShowSuccessToast(false), 5000); // HIDE AFTER 5 SECONDS
+            setShowSuccessToast(true); 
+            setTimeout(() => setShowSuccessToast(false), 5000); 
           },
           onError: (err) => {
             setError("Payment received, but minting failed. Check your dashboard.");
@@ -188,16 +188,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* RIGHT SIDE: The Minting Tool (Compacted & Centered) */}
+        {/* RIGHT SIDE: The Minting Tool */}
         <div className="w-full max-w-md bg-[#0a0a0c] p-6 rounded-[32px] shadow-[0_0_80px_rgba(168,85,247,0.08)] border border-gray-800/80 relative">
           
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-24 bg-purple-600/10 blur-[50px] pointer-events-none"></div>
 
-          {/* Image Display Area (Shorter height) */}
-          <div className="relative mb-6 group min-h-[260px] flex flex-col justify-center">
+          {/* Image Display Area - FIXED ASPECT SQUARE */}
+          <div className="relative mb-6 w-full aspect-square rounded-2xl border border-gray-800 bg-[#0d0d12] overflow-hidden flex flex-col shadow-inner">
             
+            {/* 1. Loading State */}
             {isGenerating && (
-              <div className="absolute inset-0 w-full h-full bg-[#121217] rounded-2xl border border-gray-800 flex flex-col items-center justify-center space-y-4 shadow-inner">
+              <div className="flex-1 flex flex-col items-center justify-center space-y-4">
                 <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
                 <p className="text-purple-400 font-medium tracking-wide text-sm animate-pulse">
                   {loadingMessages[loadingStep]}
@@ -205,27 +206,28 @@ export default function Home() {
               </div>
             )}
 
+            {/* 2. Image Render & Overlay Mint Button */}
             {imageUrl && !isGenerating && (
-              <div className="rounded-2xl overflow-hidden border border-gray-700 shadow-2xl bg-[#0a0a0a] relative flex flex-col h-full">
+              <div className="relative flex-1 flex flex-col w-full h-full">
                 <img 
                   src={imageUrl} 
                   alt="Generated Art" 
-                  className={`w-full aspect-square object-cover transition-opacity duration-1000 ${isImageLoaded ? "opacity-100" : "opacity-0"}`}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${isImageLoaded ? "opacity-100" : "opacity-0"}`}
                   onLoad={() => setIsImageLoaded(true)}
                 />
 
                 {isImageLoaded && (
-                  <div className="p-4 bg-[#0a0a0c] border-t border-gray-800 z-10">
+                  <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black via-black/80 to-transparent z-10 pt-16">
                     {!mintedTxHash ? (
                       <button 
                         onClick={handleMint}
                         disabled={isMinting}
-                        className="w-full bg-white hover:bg-gray-200 text-black font-black py-4 rounded-xl transition-all active:scale-[0.98] text-base"
+                        className="w-full bg-white hover:bg-gray-200 text-black font-black py-4 rounded-xl transition-all active:scale-[0.98] text-base shadow-2xl"
                       >
                         {isMinting ? status : "CLAIM AS NFT ($1.00)"}
                       </button>
                     ) : (
-                      <div className="text-center py-3 bg-green-950/30 rounded-xl border border-green-900/50">
+                      <div className="text-center py-3 bg-green-950/80 backdrop-blur-md rounded-xl border border-green-900/50">
                         <p className="text-green-400 font-black text-sm mb-1">✨ ASSET SECURED</p>
                         <a 
                           href={`https://sepolia.basescan.org/tx/${mintedTxHash}`}
@@ -241,8 +243,9 @@ export default function Home() {
               </div>
             )}
 
+            {/* 3. Empty State (Now safely inside a normal flex container) */}
             {!imageUrl && !isGenerating && (
-              <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#121217] to-[#0a0a0c] rounded-2xl border-2 border-dashed border-gray-800 flex flex-col items-center justify-center text-center p-6 shadow-inner">
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
                 <svg className="w-12 h-12 text-gray-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <p className="text-gray-400 font-medium text-base">Awaiting your vision</p>
                 <p className="text-gray-600 text-xs mt-2">Enter a prompt to ignite the engine.</p>

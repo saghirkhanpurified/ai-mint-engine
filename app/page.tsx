@@ -31,8 +31,8 @@ export default function Home() {
     setIsGenerating(true);
     setError(""); setImageUrl(""); setMintedTxHash(""); setStatus("");
 
-    // --- PROMPT GUARD: The Secret Sauce ---
-    const masterpiecePrompt = `${prompt}, masterpiece, highly detailed, 8k resolution, cinematic lighting, sharp focus, professional digital art style, vibrant colors`;
+    // --- PROMPT GUARD: The Fine Art Gallery ---
+    const masterpiecePrompt = `${prompt}, abstract geometric algorithm art, minimalist vector style, mathematical perfection, high-end modern art museum piece, masterpiece, 8k resolution, trending on ArtBlocks`;
 
     try {
       const response = await fetch("/api/generate", {

@@ -124,8 +124,10 @@ export default function Home() {
     });
   };
 
+  // NEW LOGIC: Only show as "Not Loading" when the generation is done AND the image is fully downloaded.
+  const isActuallyLoading = isGenerating || (imageUrl !== "" && !isImageLoaded);
+
   return (
-    // FIX: Changed to min-h-[100dvh] and removed overflow-hidden to allow mobile scrolling
     <main className="min-h-[100dvh] w-full bg-black text-white font-sans selection:bg-purple-500/30 overflow-x-hidden flex flex-col relative">
       
       {showSuccessToast && (
@@ -150,10 +152,10 @@ export default function Home() {
         <ConnectButton client={client} />
       </nav>
 
-      {/* MAIN SPLIT CONTENT - Added pt-28 to clear nav on mobile, flex-col for mobile, flex-row for laptop */}
+      {/* MAIN SPLIT CONTENT */}
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center max-w-6xl mx-auto w-full px-4 sm:px-6 gap-10 lg:gap-16 pt-28 pb-16 lg:pt-16">
         
-        {/* LEFT SIDE: Text centers on mobile, left-aligns on desktop */}
+        {/* LEFT SIDE */}
         <div className="flex-1 text-center lg:text-left space-y-6 w-full max-w-lg">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent leading-[1.1]">
             FORGE DIGITAL <br className="hidden sm:block"/> <span className="text-purple-500 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]">ASSETS</span> WITH AI.
@@ -185,22 +187,24 @@ export default function Home() {
           </div>
         </div>
 
-        {/* RIGHT SIDE: The App Container */}
+        {/* RIGHT SIDE */}
         <div className="w-full max-w-[380px] bg-[#0a0a0c] p-5 rounded-[28px] shadow-[0_0_80px_rgba(168,85,247,0.08)] border border-gray-800/80 relative">
           
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-20 bg-purple-600/10 blur-[40px] pointer-events-none"></div>
 
           <div className="relative mb-5 w-full aspect-square rounded-2xl border border-gray-800 bg-[#0d0d12] overflow-hidden shadow-inner">
             
-            {isGenerating && (
+            {/* 1. Loading State (Now stays active until image is fully downloaded) */}
+            {isActuallyLoading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center space-y-3 bg-[#0d0d12] z-20">
                 <div className="w-8 h-8 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
                 <p className="text-purple-400 font-medium tracking-wide text-xs animate-pulse">
-                  {loadingMessages[loadingStep]}
+                  {isGenerating ? loadingMessages[loadingStep] : "Downloading masterpiece..."}
                 </p>
               </div>
             )}
 
+            {/* 2. Empty State */}
             {!imageUrl && !isGenerating && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-[#0d0d12] z-10">
                 <svg className="w-10 h-10 text-gray-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -209,16 +213,17 @@ export default function Home() {
               </div>
             )}
 
-            {imageUrl && !isGenerating && (
-              <div className="absolute inset-0 z-30">
+            {/* 3. Image Render & Overlay (Only visible when fully loaded) */}
+            {imageUrl && (
+              <div className={`absolute inset-0 z-30 transition-opacity duration-1000 ${isImageLoaded && !isActuallyLoading ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
                 <img 
                   src={imageUrl} 
                   alt="Generated Art" 
-                  className={`w-full h-full object-cover transition-opacity duration-1000 ${isImageLoaded ? "opacity-100" : "opacity-0"}`}
+                  className="w-full h-full object-cover"
                   onLoad={() => setIsImageLoaded(true)}
                 />
 
-                {isImageLoaded && (
+                {isImageLoaded && !isActuallyLoading && (
                   <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black via-black/80 to-transparent pt-12">
                     {!mintedTxHash ? (
                       <button 
@@ -259,10 +264,10 @@ export default function Home() {
 
             <button 
               onClick={handleGenerate}
-              disabled={isGenerating || isMinting}
+              disabled={isActuallyLoading || isMinting}
               className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black py-3.5 rounded-xl transition-all active:scale-[0.98] shadow-[0_0_15px_rgba(168,85,247,0.3)] disabled:opacity-50 text-xs tracking-wide"
             >
-              {isGenerating ? "INITIALIZING..." : "GENERATE ARTWORK"}
+              {isActuallyLoading ? "INITIALIZING..." : "GENERATE ARTWORK"}
             </button>
           </div>
         </div>

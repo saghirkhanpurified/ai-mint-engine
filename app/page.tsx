@@ -8,7 +8,7 @@ import { mintTo } from "thirdweb/extensions/erc721";
 
 // --- SETTINGS ---
 const MY_WALLET_ADDRESS = "0xc70C4b47C5Be4a510c645A3cdEaD2368F5Df0c6D"; 
-const MINT_FEE_USD = "0.00045";
+const MINT_FEE_ETH = "0.00005"; // Lowered to roughly $0.15 to cover AI API costs
 const client = createThirdwebClient({ clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string });
 const LOADING_MSGS = ["Analyzing vision...", "Rendering pixels...", "Applying lighting...", "Finalizing..."];
 
@@ -52,14 +52,14 @@ export default function Home() {
 
   const handleMint = async () => {
     if (!account) return setError("Connect your wallet first!");
-    setError(""); setStatus("Step 1 of 2: Processing Payment...");
+    setError(""); setStatus("Step 1 of 2: Processing Base Fee...");
     
     const contract = getContract({ client, chain: baseSepolia, address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string });
 
-    sendTx(prepareTransaction({ to: MY_WALLET_ADDRESS, chain: baseSepolia, client, value: toWei(MINT_FEE_USD) }), {
+    sendTx(prepareTransaction({ to: MY_WALLET_ADDRESS, chain: baseSepolia, client, value: toWei(MINT_FEE_ETH) }), {
       onSuccess: () => {
-        setStatus("Step 2 of 2: Confirming Mint...");
-        sendTx(mintTo({ contract, to: account.address, nft: { name: "AI Masterpiece", description: prompt, image: imgUrl } }), {
+        setStatus("Step 2 of 2: Forging Genesis NFT...");
+        sendTx(mintTo({ contract, to: account.address, nft: { name: "Mint Engine Genesis", description: prompt, image: imgUrl } }), {
           onSuccess: (res) => {
             setTxHash(res.transactionHash); setStatus(""); setShowToast(true); 
             setTimeout(() => setShowToast(false), 5000); 
@@ -112,11 +112,11 @@ export default function Home() {
                   <div className="absolute bottom-0 w-full p-3 bg-gradient-to-t from-black via-black/80 to-transparent pt-12">
                     {!txHash ? (
                       <button onClick={handleMint} disabled={isMinting} className="w-full bg-white hover:bg-gray-200 text-black font-black py-3.5 rounded-xl transition-all active:scale-[0.98] text-sm shadow-2xl">
-                        {isMinting ? status : "CLAIM AS NFT ($1.00)"}
+                        {isMinting ? status : "MINT GENESIS PASS (~$0.15)"}
                       </button>
                     ) : (
                       <div className="text-center py-2.5 bg-green-950/80 backdrop-blur-md rounded-xl border border-green-900/50">
-                        <p className="text-green-400 font-black text-xs mb-0.5">✨ ASSET SECURED</p>
+                        <p className="text-green-400 font-black text-xs mb-0.5">✨ GENESIS SECURED</p>
                         <a href={`https://sepolia.basescan.org/tx/${txHash}`} target="_blank" className="text-[10px] text-green-300 underline">Verify on Blockchain</a>
                       </div>
                     )}
@@ -163,7 +163,7 @@ function Toast({ show, onClose }: { show: boolean, onClose: () => void }) {
     <div className="fixed bottom-6 right-6 bg-[#0a0a0c] border border-purple-500/50 shadow-[0_0_40px_rgba(168,85,247,0.3)] rounded-2xl p-4 flex items-center gap-4 z-50 transition-all duration-500">
       <div className="bg-purple-500/20 p-2 rounded-full text-purple-400">✨</div>
       <div>
-        <h4 className="text-white font-black text-sm">Masterpiece Minted!</h4>
+        <h4 className="text-white font-black text-sm">Genesis Minted!</h4>
         <p className="text-gray-400 text-xs mt-0.5">Asset successfully secured to your wallet.</p>
       </div>
       <button onClick={onClose} className="text-gray-600 hover:text-white ml-4">✕</button>
@@ -175,14 +175,14 @@ function MarketingPitch() {
   return (
     <div className="flex-1 text-center lg:text-left space-y-6 w-full max-w-lg">
       <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent leading-[1.1]">
-        FORGE DIGITAL <br className="hidden sm:block"/> <span className="text-purple-500 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]">ASSETS</span> WITH AI.
+        CO-CREATE THE <br className="hidden sm:block"/> <span className="text-purple-500 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]">GENESIS</span> COLLECTION.
       </h1>
       <p className="text-gray-400 text-base leading-relaxed px-2 lg:px-0">
-        Don't just generate images. Mint Engine Pro transforms your ideas into permanent, high-fidelity digital assets on the Base blockchain. Own what you create.
+        Don't just generate images. Help us build the largest community-driven AI art collection on the Base network. Mint your masterpiece at-cost and become a founding member of our ecosystem.
       </p>
       <div className="space-y-4 pt-6 border-t border-gray-900 text-left">
-        <Feature icon="⚡" title="AI Prompt-Guard" desc="Our engine secretly upgrades simple text into a complex cinematic prompt." />
-        <Feature icon="🌐" title="Base L2 Network" desc="Lightning fast minting with near-zero gas fees directly on Coinbase's L2." />
+        <Feature icon="👑" title="Genesis Founder Status" desc="Your NFT is your verifiable pass. Early minters will secure future ecosystem rewards." />
+        <Feature icon="⚡" title="At-Cost AI Generation" desc="We dropped the fees. Pay only the base cost to power the AI and secure it on-chain." />
       </div>
     </div>
   );

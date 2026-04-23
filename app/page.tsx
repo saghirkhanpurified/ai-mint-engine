@@ -34,18 +34,18 @@ export default function Home() {
     return () => clearInterval(int);
   }, [isGenerating]);
 
+  // NEW HANDLE GENERATE FUNCTION
   const handleGenerate = async () => {
     if (!prompt) return setError("What should I create for you?");
     setIsGenerating(true); setIsLoaded(false); setError(""); setImgUrl(""); setTxHash(""); setShowToast(false);
 
-    // --- THE "DUMB DOWN" PROMPT GUARD ---
-    // Forcing the AI to use game-asset terminology to prevent it from making detailed paintings.
-    const chunkyPunkPrompt = `A literal 24x24 pixel art sprite of ${prompt}. Extremely chunky, low-resolution, minimal detail, 8-bit retro aesthetic, solid flat background, no shading, max 16 colors, MS Paint style, classic cryptopunk profile picture. Do not use high resolution or modern pixel art techniques.`;
+    // CLEAN PROMPT GUARD: The custom Replicate model does the heavy lifting now.
+    const pixelPrompt = `pixel art, ${prompt}, solid flat background, perfectly centered avatar`;
 
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
-        body: JSON.stringify({ prompt: chunkyPunkPrompt }), 
+        body: JSON.stringify({ prompt: pixelPrompt }), 
       });
       if (!res.ok) throw new Error("The Forge is busy. Try again!");
       setImgUrl((await res.json()).imageUrl); 

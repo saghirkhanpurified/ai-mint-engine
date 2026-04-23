@@ -8,9 +8,10 @@ import { mintTo } from "thirdweb/extensions/erc721";
 
 // --- SETTINGS ---
 const MY_WALLET_ADDRESS = "0xc70C4b47C5Be4a510c645A3cdEaD2368F5Df0c6D"; 
-const MINT_FEE_ETH = "0.00005"; 
+const MINT_FEE_ETH = "0.00005"; // Covers server and AI API costs
 const client = createThirdwebClient({ clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string });
-const LOADING_MSGS = ["Analyzing traits...", "Rendering pixels...", "Applying 8-bit filter...", "Finalizing Avatar..."];
+// NEW: Specific loading messages for classic block art
+const LOADING_MSGS = ["Analyzing prompt...", "Rendering square pixels...", "Applying color limitations...", "Finalizing block art..."];
 
 export default function Home() {
   const account = useActiveAccount(); 
@@ -39,14 +40,15 @@ export default function Home() {
     if (!prompt) return setError("What should I create for you?");
     setIsGenerating(true); setIsLoaded(false); setError(""); setImgUrl(""); setTxHash(""); setShowToast(false);
 
-    // --- PIXEL PUNK PROMPT GUARD ---
-    // This forces the AI to ignore realistic art and ONLY make pixel profile pictures.
-    const punkPrompt = `${prompt}, retro 8-bit pixel art, profile picture, character portrait, cryptopunk aesthetic, sharp pixels, flat minimal background, 2d indie game art, avatar design, perfectly centered`;
+    // --- SUPER STRENGTH CLASSIC PUNK PROMPT GUARD (THE FIX) ---
+    // This removes generic "8-bit" and "retro" terms.
+    // It FORCES ultra-low 24x24 resolution, blocky pixels, a minimal palette, and no smoothing.
+    const classicPunkPrompt = `${prompt}, perfect classic cryptopunk 24x24 pixel art, blocky retro style, strictly ultra-low resolution, 100% sharp square pixels, minimal 8-bit color palette, profile picture avatar portrait, clean flat solid color background, no anti-aliasing, original crypto art style, perfectly centered`;
 
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
-        body: JSON.stringify({ prompt: punkPrompt }), 
+        body: JSON.stringify({ prompt: classicPunkPrompt }), 
       });
       if (!res.ok) throw new Error("The Forge is busy. Try again!");
       setImgUrl((await res.json()).imageUrl); 
@@ -102,7 +104,8 @@ export default function Home() {
 
             {!imgUrl && !isGenerating && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-[#0d0d12] z-10">
-                <span className="text-4xl mb-3 opacity-60 grayscale">👾</span>
+                {/* Clean SVG icon instead of pixel monster */}
+                <svg className="w-10 h-10 text-gray-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <p className="text-gray-400 font-medium text-sm">Awaiting your vision</p>
                 <p className="text-gray-600 text-[11px] mt-1">Enter a prompt to ignite the engine.</p>
               </div>
@@ -110,7 +113,6 @@ export default function Home() {
 
             {imgUrl && (
               <div className={`absolute inset-0 z-30 transition-opacity duration-1000 ${isLoaded && !isWorking ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-                {/* Changed to object-contain so pixel art doesn't get weirdly cropped */}
                 <img src={imgUrl} alt="Art" className="w-full h-full object-cover" onLoad={() => setIsLoaded(true)} />
 
                 {isLoaded && !isWorking && (
@@ -199,7 +201,7 @@ function Feature({ icon, title, desc }: { icon: string, title: string, desc: str
       <div className="bg-purple-900/30 p-2.5 rounded-lg border border-purple-500/20 text-purple-400 mt-1 shrink-0">{icon}</div>
       <div>
         <h3 className="text-white font-bold text-base">{title}</h3>
-        <p className="text-gray-500 text-xs mt-1">{desc}</p>
+        <p className="text-gray-600 text-xs mt-1">{desc}</p>
       </div>
     </div>
   );

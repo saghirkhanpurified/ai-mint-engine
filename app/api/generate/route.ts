@@ -10,8 +10,6 @@ export async function POST(req: Request) {
       auth: token,
     });
 
-    // We are calling Replicate's official, native Retro Diffusion engine.
-    // This physically forces the AI to output a 128x128 retro game asset.
     const output = await replicate.run(
       "retro-diffusion/rd-fast",
       {
@@ -26,9 +24,25 @@ export async function POST(req: Request) {
       }
     );
 
-    // Replicate returns an array of image URLs. We grab the first one.
-    const imageUrl = Array.isArray(output) ? output[0] : output;
-    return NextResponse.json({ imageUrl });
+    // --- THE UNPACKER FIX ---
+    // We explicitly open the Replicate FileObject and extract only the raw string URL
+    let finalImageUrl = "";
+    const rawResult = Array.isArray(output) ? output[0] : output;
+
+    if (typeof rawResult === 'string') {
+        finalImageUrl = rawResult;
+    } else if (typeof rawResult === 'object' && rawResult !== null) {
+        // Newer versions of Replicate use a .url() function for FileObjects
+        if (typeof rawResult.url === 'function') {
+            finalImageUrl = rawResult.url().toString();
+        } else if (rawResult.url) {
+            finalImageUrl = rawResult.url;
+        } else {
+            finalImageUrl = String(rawResult);
+        }
+    }
+
+    return NextResponse.json({ imageUrl: finalImageUrl });
 
   } catch (error: any) {
     console.error("AI Generation Error:", error);

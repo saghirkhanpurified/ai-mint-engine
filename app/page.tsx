@@ -8,10 +8,9 @@ import { mintTo } from "thirdweb/extensions/erc721";
 
 // --- SETTINGS ---
 const MY_WALLET_ADDRESS = "0xc70C4b47C5Be4a510c645A3cdEaD2368F5Df0c6D"; 
-const MINT_FEE_ETH = "0.00005"; // Covers server and AI API costs
+const MINT_FEE_ETH = "0.00005"; 
 const client = createThirdwebClient({ clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string });
-// NEW: Specific loading messages for classic block art
-const LOADING_MSGS = ["Analyzing prompt...", "Rendering square pixels...", "Applying color limitations...", "Finalizing block art..."];
+const LOADING_MSGS = ["Analyzing prompt...", "Forcing 24x24 grid...", "Limiting color palette...", "Finalizing block art..."];
 
 export default function Home() {
   const account = useActiveAccount(); 
@@ -29,7 +28,6 @@ export default function Home() {
   const [loadStep, setLoadStep] = useState(0);
   const [showToast, setShowToast] = useState(false); 
 
-  // Loading Text Animation
   useEffect(() => {
     const int = isGenerating ? setInterval(() => setLoadStep(p => (p + 1) % 4), 2500) : undefined;
     if (!isGenerating) setLoadStep(0);
@@ -40,15 +38,14 @@ export default function Home() {
     if (!prompt) return setError("What should I create for you?");
     setIsGenerating(true); setIsLoaded(false); setError(""); setImgUrl(""); setTxHash(""); setShowToast(false);
 
-    // --- SUPER STRENGTH CLASSIC PUNK PROMPT GUARD (THE FIX) ---
-    // This removes generic "8-bit" and "retro" terms.
-    // It FORCES ultra-low 24x24 resolution, blocky pixels, a minimal palette, and no smoothing.
-    const classicPunkPrompt = `${prompt}, perfect classic cryptopunk 24x24 pixel art, blocky retro style, strictly ultra-low resolution, 100% sharp square pixels, minimal 8-bit color palette, profile picture avatar portrait, clean flat solid color background, no anti-aliasing, original crypto art style, perfectly centered`;
+    // --- THE "DUMB DOWN" PROMPT GUARD ---
+    // Forcing the AI to use game-asset terminology to prevent it from making detailed paintings.
+    const chunkyPunkPrompt = `A literal 24x24 pixel art sprite of ${prompt}. Extremely chunky, low-resolution, minimal detail, 8-bit retro aesthetic, solid flat background, no shading, max 16 colors, MS Paint style, classic cryptopunk profile picture. Do not use high resolution or modern pixel art techniques.`;
 
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
-        body: JSON.stringify({ prompt: classicPunkPrompt }), 
+        body: JSON.stringify({ prompt: chunkyPunkPrompt }), 
       });
       if (!res.ok) throw new Error("The Forge is busy. Try again!");
       setImgUrl((await res.json()).imageUrl); 
@@ -87,7 +84,6 @@ export default function Home() {
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center max-w-6xl mx-auto w-full px-4 sm:px-6 gap-10 lg:gap-16 pt-28 pb-16 lg:pt-16">
         <MarketingPitch />
 
-        {/* APP CONTAINER */}
         <div className="w-full max-w-[380px] bg-[#0a0a0c] p-5 rounded-[28px] shadow-[0_0_80px_rgba(168,85,247,0.08)] border border-gray-800/80 relative">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-20 bg-purple-600/10 blur-[40px] pointer-events-none" />
 
@@ -104,7 +100,6 @@ export default function Home() {
 
             {!imgUrl && !isGenerating && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-[#0d0d12] z-10">
-                {/* Clean SVG icon instead of pixel monster */}
                 <svg className="w-10 h-10 text-gray-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <p className="text-gray-400 font-medium text-sm">Awaiting your vision</p>
                 <p className="text-gray-600 text-[11px] mt-1">Enter a prompt to ignite the engine.</p>
@@ -113,7 +108,14 @@ export default function Home() {
 
             {imgUrl && (
               <div className={`absolute inset-0 z-30 transition-opacity duration-1000 ${isLoaded && !isWorking ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-                <img src={imgUrl} alt="Art" className="w-full h-full object-cover" onLoad={() => setIsLoaded(true)} />
+                {/* CSS HACK: imageRendering: "pixelated" forces the browser to keep the edges sharp and blocky instead of blurring them */}
+                <img 
+                  src={imgUrl} 
+                  alt="Art" 
+                  className="w-full h-full object-cover" 
+                  style={{ imageRendering: "pixelated" }} 
+                  onLoad={() => setIsLoaded(true)} 
+                />
 
                 {isLoaded && !isWorking && (
                   <div className="absolute bottom-0 w-full p-3 bg-gradient-to-t from-black via-black/80 to-transparent pt-12">

@@ -3,36 +3,30 @@ import Replicate from "replicate";
 
 export async function POST(req: Request) {
   try {
-    // --- DIAGNOSTIC LOGS ---
-    console.log("--- INITIATING FORGE ---");
     const token = process.env.REPLICATE_API_TOKEN;
-    
-    // This will print whether the token is missing, or if it exists, the first 4 letters of it.
-    if (!token) {
-      console.log("CRITICAL ERROR: SERVER SEES NO TOKEN! IT IS UNDEFINED.");
-    } else {
-      console.log(`SUCCESS: Server found a token starting with: ${token.substring(0, 4)}...`);
-    }
-
     const { prompt } = await req.json();
 
     const replicate = new Replicate({
       auth: token,
     });
 
+    // We are calling Replicate's official, native Retro Diffusion engine.
+    // This physically forces the AI to output a 128x128 retro game asset.
     const output = await replicate.run(
-      "nerijs/pixel-art-xl:latest",
+      "retro-diffusion/rd-fast",
       {
         input: {
-          prompt: prompt,
-          num_outputs: 1,
-          scheduler: "K_EULER",
-          num_inference_steps: 25,
-          guidance_scale: 7.5,
+          prompt: `${prompt}, classic cryptopunk avatar portrait, front facing, centered`,
+          style: "retro",
+          width: 128,
+          height: 128,
+          num_images: 1,
+          remove_bg: false
         }
       }
     );
 
+    // Replicate returns an array of image URLs. We grab the first one.
     const imageUrl = Array.isArray(output) ? output[0] : output;
     return NextResponse.json({ imageUrl });
 

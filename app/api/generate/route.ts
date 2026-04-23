@@ -1,19 +1,27 @@
 import { NextResponse } from "next/server";
 import Replicate from "replicate";
 
-// Initialize the Replicate client with your new API token
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
-
 export async function POST(req: Request) {
   try {
+    // --- DIAGNOSTIC LOGS ---
+    console.log("--- INITIATING FORGE ---");
+    const token = process.env.REPLICATE_API_TOKEN;
+    
+    // This will print whether the token is missing, or if it exists, the first 4 letters of it.
+    if (!token) {
+      console.log("CRITICAL ERROR: SERVER SEES NO TOKEN! IT IS UNDEFINED.");
+    } else {
+      console.log(`SUCCESS: Server found a token starting with: ${token.substring(0, 4)}...`);
+    }
+
     const { prompt } = await req.json();
 
-    // We are calling a specialized Pixel Art LoRA model here.
-    // This model physically does not know how to paint; it only knows how to build pixel grids.
+    const replicate = new Replicate({
+      auth: token,
+    });
+
     const output = await replicate.run(
-      "nerijs/pixel-art-xl:latest", // This is a specific community-trained Pixel Art model
+      "nerijs/pixel-art-xl:latest",
       {
         input: {
           prompt: prompt,
@@ -25,9 +33,7 @@ export async function POST(req: Request) {
       }
     );
 
-    // Replicate returns an array of URLs. We grab the first one.
     const imageUrl = Array.isArray(output) ? output[0] : output;
-
     return NextResponse.json({ imageUrl });
 
   } catch (error: any) {
